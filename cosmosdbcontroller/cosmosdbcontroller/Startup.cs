@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 
 namespace cosmosdbcontroller
 {
@@ -18,8 +19,11 @@ namespace cosmosdbcontroller
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(90));
             services.AddControllers();
             services.AddSingleton<ICosmosDbrepository, CosmosDbrepository>();
+            services.AddHostedService(
+                serviceProvider => (CosmosDbrepository)serviceProvider.GetRequiredService(typeof(ICosmosDbrepository)));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

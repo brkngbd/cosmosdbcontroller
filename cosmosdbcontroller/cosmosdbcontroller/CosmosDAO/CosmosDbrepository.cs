@@ -1,8 +1,13 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Storage.Core.Util;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace cosmosdbcontroller
@@ -10,7 +15,7 @@ namespace cosmosdbcontroller
     /// <summary>
     /// Used to communicate to CosmosDB service.
     /// </summary>
-    public class CosmosDbrepository : ICosmosDbrepository
+    public class CosmosDbrepository : BackgroundService, ICosmosDbrepository
     {
         /// <summary>The database identifier</summary>
         private const string databaseId = "db";
@@ -33,6 +38,10 @@ namespace cosmosdbcontroller
         /// <summary>The container we will create.</summary>
         private Container container;
 
+        private AsyncManualResetEvent eventInitialized = new AsyncManualResetEvent(false);
+
+        private string initializationError = null;
+
         /// <summary>Initializes a new instance of the <see cref="CosmosDbrepository" /> class.</summary>
         /// <param name="configuration">The configuration.</param>
         public CosmosDbrepository(IConfiguration configuration)
@@ -41,15 +50,14 @@ namespace cosmosdbcontroller
             primaryKey = configuration["PrimaryKey"];
 
             this.cosmosClient = new CosmosClient(endpointUri, primaryKey, new CosmosClientOptions() { ApplicationName = "CosmosDBDotnetQuickstart" });
-            this.CreateDatabaseAsync().GetAwaiter().GetResult();
-            this.CreateContainerAsync().GetAwaiter().GetResult();
-            this.ScaleContainerAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>Creates the item.</summary>
         /// <param name="item">The item to create.</param>
         public async Task<Movie> CreateItemAsync(Movie item)
         {
+            await WaitForInitialization();
+
             ItemResponse<Movie> itemResponse = null;
             try
             {
@@ -67,6 +75,8 @@ namespace cosmosdbcontroller
         /// <param name="item">The item.</param>
         public async Task UpdateItemAsync(string id, Movie item)
         {
+            await WaitForInitialization();
+
             ItemResponse<Movie> itemResponse = await this.container.ReadItemAsync<Movie>(id, new PartitionKey(item.Title));
             var itemBody = itemResponse.Resource;
             itemBody.ImdbRating = item.ImdbRating;
@@ -77,6 +87,8 @@ namespace cosmosdbcontroller
         /// <param name="id">The identifier.</param>
         public async Task DeleteItemAsync(string id)
         {
+            await WaitForInitialization();
+
             Movie item = await GetItemAsync(id);
             if (item != null)
             {
@@ -88,6 +100,8 @@ namespace cosmosdbcontroller
         /// <param name="id">The identifier.</param>
         public async Task<Movie> GetItemAsync(string id)
         {
+            await WaitForInitialization();
+
             var sqlQueryText = $"SELECT * FROM Movies m WHERE m.id='{id}'";
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
@@ -107,6 +121,8 @@ namespace cosmosdbcontroller
         /// <summary>Gets all items.</summary>
         public async Task<IEnumerable<Movie>> GetAllItemsAsync()
         {
+            await WaitForInitialization();
+
             var sqlQueryText = "SELECT * FROM c";
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
@@ -124,6 +140,34 @@ namespace cosmosdbcontroller
             }
 
             return movies;
+        }
+
+        private async Task Initialize()
+        {
+            try
+            {
+                await this.CreateDatabaseAsync();
+                await this.CreateContainerAsync();
+                await this.ScaleContainerAsync();
+            }
+            catch(Exception exc)
+            {
+                this.initializationError = exc.Message;
+            }
+
+            await eventInitialized.Set();
+        }
+
+        /// <summary>Waits for initialization.</summary>
+        /// <exception cref="Exception"></exception>
+        private async Task WaitForInitialization()
+        {
+            await eventInitialized.WaitAsync();
+
+            if(this.initializationError!=null)
+            {
+                throw new Exception(this.initializationError);
+            }
         }
 
         /// <summary>
@@ -158,6 +202,19 @@ namespace cosmosdbcontroller
                 // Update throughput
                 await this.container.ReplaceThroughputAsync(newThroughput);
             }
+        }
+
+        /// <summary>
+        /// This method is called when the <see cref="T:Microsoft.Extensions.Hosting.IHostedService">IHostedService</see> starts. The implementation should return a task that represents
+        /// the lifetime of the long running operation(s) being performed.
+        /// </summary>
+        /// <param name="stoppingToken">
+        /// Triggered when <see cref="M:Microsoft.Extensions.Hosting.IHostedService.StopAsync(System.Threading.CancellationToken)">StopAsync(System.Threading.CancellationToken)</see> is called.
+        /// </param>
+        /// <returns>A <see cref="T:System.Threading.Tasks.Task">Task</see> that represents the long running operations.</returns>
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            return Initialize();
         }
     }
 }
