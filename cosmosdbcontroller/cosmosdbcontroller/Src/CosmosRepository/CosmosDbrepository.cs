@@ -26,7 +26,7 @@
         private const string ContainerId = "items";
 
         /// <summary>The items memory cache</summary>
-        private readonly IItemsMemoryCache itemsMemoryCache;
+        private readonly IMemoryCache itemsMemoryCache;
 
         /// <summary>The Cosmos client instance</summary>
         private CosmosClient cosmosClient;
@@ -46,7 +46,7 @@
         /// <summary>Initializes a new instance of the <see cref="CosmosDbrepository" /> class.</summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="itemsMemoryCache">The items memory cache.</param>
-        public CosmosDbrepository(IConfiguration configuration, IItemsMemoryCache itemsMemoryCache)
+        public CosmosDbrepository(IConfiguration configuration, IMemoryCache itemsMemoryCache)
         {
             var endpointUri = configuration["EndpointUri"];
             var primaryKey = configuration["PrimaryKey"];
@@ -112,7 +112,7 @@
         {
             this.EnsureThatCosmosInitialized();
 
-            this.itemsMemoryCache.Cache.TryGetValue<Movie>(Movie.ComposeUniqueKey(id, partitionKey), out Movie movieItem);
+            this.itemsMemoryCache.TryGetValue<Movie>(Movie.ComposeUniqueKey(id, partitionKey), out Movie movieItem);
 
             using (ResponseMessage streamedResponse = await this.container.ReadItemStreamAsync(
                partitionKey: new PartitionKey(partitionKey),
@@ -128,7 +128,7 @@
                 {
                     movieItem = await streamedResponse.Content.ToObject<Movie>();
 
-                    this.itemsMemoryCache.Cache.Set(Movie.ComposeUniqueKey(id, partitionKey), movieItem, new MemoryCacheEntryOptions { Size = 1 });
+                    this.itemsMemoryCache.Set(Movie.ComposeUniqueKey(id, partitionKey), movieItem, new MemoryCacheEntryOptions { Size = 1 });
                 }
                 else
                 {
@@ -175,7 +175,7 @@
             var memCacheOptions = new MemoryCacheEntryOptions { Size = 1 };
             foreach (var movie in allMovies)
             {
-                this.itemsMemoryCache.Cache.Set(movie.GetUniqueKey(), movie, memCacheOptions);
+                this.itemsMemoryCache.Set(movie.GetUniqueKey(), movie, memCacheOptions);
             }
 
             return movies.SelectMany(x => x);

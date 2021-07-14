@@ -2,13 +2,15 @@ namespace CosmosDbController
 {
     using System;
     using Microsoft.AspNetCore.Builder;
-    using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
+    using Microsoft.Extensions.Options;
 
     public class Startup
-    {
+{
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -21,7 +23,9 @@ namespace CosmosDbController
         {
             services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(90));
             services.AddControllers();
-            services.AddSingleton<IItemsMemoryCache, ItemsMemoryCache>();
+            services.AddSingleton<IOptions<MemoryCacheOptions>, MemoryCacheOptions>(
+                serviceProvider => new MemoryCacheOptions { SizeLimit = 100 });
+            services.AddSingleton<IMemoryCache, MemoryCache>();
             services.AddSingleton<ICosmosDbrepository, CosmosDbrepository>();
             services.AddHostedService(
                 serviceProvider =>
