@@ -3,11 +3,11 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
-    /// <summary>
-    ///   The CRUD controller.
-    /// </summary>
+/// <summary>
+///   The CRUD controller.
+/// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class MoviesController : ControllerBase
@@ -68,7 +68,7 @@
 
                 if (creationResult.created)
                 {
-                    return CreatedAtAction("GET", "movies", new Movie { Title = item.Title }, creationResult.itemMovie);
+                    return  CreatedAtAction(nameof(Get), new { id = item.Title, partitionKey = item.Year }, item);
                 }
                 else
                 {

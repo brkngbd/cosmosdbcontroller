@@ -119,16 +119,20 @@
                id: id,
                requestOptions: movieItem == null ? null : new ItemRequestOptions { IfNoneMatchEtag = movieItem.ETag }))
             {
+                if (streamedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    return movieItem;
+                }
+
                 if (streamedResponse.IsSuccessStatusCode)
                 {
-                    if (streamedResponse.StatusCode == HttpStatusCode.NotModified)
-                    {
-                        return movieItem;
-                    }
-
                     movieItem = await streamedResponse.Content.ToObject<Movie>();
 
                     this.itemsMemoryCache.Cache.Set(Movie.ComposeUniqueKey(id, partitionKey), movieItem, new MemoryCacheEntryOptions { Size = 1 });
+                }
+                else
+                {
+                    movieItem = null;
                 }
             }
 
