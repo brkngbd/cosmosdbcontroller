@@ -3,6 +3,9 @@
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
+    /// <summary>
+    ///   Movie document item
+    /// </summary>
     public class Movie
     {
         /// <summary>Gets or sets the e tag.</summary>
@@ -41,10 +44,10 @@
 
         /// <summary>Composes the unique key.</summary>
         /// <param name="id">The identifier.</param>
-        /// <param name="PartitionKey">The partition key.</param>
-        public static string ComposeUniqueKey(string id, string PartitionKey)
+        /// <param name="partitionKey">The partition key.</param>
+        public static string ComposeUniqueKey(string id, string partitionKey)
         {
-            return $"id={id}, partitionKey={PartitionKey}";
+            return $"id={id}, partitionKey={partitionKey}";
         }
     }
 }

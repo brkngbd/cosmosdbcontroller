@@ -5,12 +5,18 @@
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
 
+    /// <summary>
+    ///   The CRUD controller.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class MoviesController : ControllerBase
     {
+        /// <summary>The cosmos repo instance.</summary>
         private readonly ICosmosDbrepository cosmosRepo;
 
+        /// <summary>Initializes a new instance of the <see cref="MoviesController" /> class.</summary>
+        /// <param name="cosmosDao">The cosmos DAO.</param>
         public MoviesController(ICosmosDbrepository cosmosDao)
         {
             this.cosmosRepo = cosmosDao;
@@ -20,7 +26,7 @@
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            return await ExecuteFunc(async () =>
+            return await this.ExecuteFunc(async () =>
             {
                 return Ok(await cosmosRepo.GetAllItemsAsync());
             });
@@ -30,7 +36,7 @@
         [HttpGet("{id}/{partitionKey}")]
         public async Task<IActionResult> Get(string id, string partitionKey)
         {
-            return await ExecuteFunc(async () =>
+            return await this.ExecuteFunc(async () =>
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
@@ -51,7 +57,7 @@
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Movie item)
         {
-            return await ExecuteFunc(async () =>
+            return await this.ExecuteFunc(async () =>
             {
                 if (item == null)
                 {
@@ -75,7 +81,7 @@
         [HttpPut("{id}/{partitionKey}")]
         public async Task<IActionResult> Update(string id, string partitionKey, [FromBody] Movie item)
         {
-            return await ExecuteFunc(async () =>
+            return await this.ExecuteFunc(async () =>
             {
                 if (item == null || string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(partitionKey))
                 {
@@ -99,7 +105,7 @@
         [HttpDelete("{id}/{partitionKey}")]
         public async Task<IActionResult> Delete(string id, string partitionKey)
         {
-            return await ExecuteFunc(async () =>
+            return await this.ExecuteFunc(async () =>
             {
                 if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(partitionKey))
                 {

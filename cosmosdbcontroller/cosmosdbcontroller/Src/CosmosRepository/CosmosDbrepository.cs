@@ -20,19 +20,13 @@
     public class CosmosDbrepository : BackgroundService, ICosmosDbrepository
     {
         /// <summary>The database identifier</summary>
-        private const string databaseId = "dbnew1";
+        private const string DatabaseId = "dbnew1";
 
         /// <summary>The container identifier</summary>
-        private const string containerId = "items";
+        private const string ContainerId = "items";
 
         /// <summary>The items memory cache</summary>
         private readonly IItemsMemoryCache itemsMemoryCache;
-
-        /// <summary>The Azure Cosmos DB endpoint URI for running this sample</summary>
-        private readonly string endpointUri;
-
-        /// <summary>The primary key for the Azure Cosmos account.</summary>
-        private readonly string primaryKey;
 
         /// <summary>The Cosmos client instance</summary>
         private CosmosClient cosmosClient;
@@ -46,7 +40,7 @@
         /// <summary>The event used to ensure that CosmosDb is initialized.</summary>
         private AsyncManualResetEvent eventInitialized = new AsyncManualResetEvent(false);
 
-        /// <summary>The CosmosDb initialization error meesage.</summary>
+        /// <summary>The CosmosDb initialization error message.</summary>
         private string initializationError = null;
 
         /// <summary>Initializes a new instance of the <see cref="CosmosDbrepository" /> class.</summary>
@@ -54,8 +48,8 @@
         /// <param name="itemsMemoryCache">The items memory cache.</param>
         public CosmosDbrepository(IConfiguration configuration, IItemsMemoryCache itemsMemoryCache)
         {
-            endpointUri = configuration["EndpointUri"];
-            primaryKey = configuration["PrimaryKey"];
+            var endpointUri = configuration["EndpointUri"];
+            var primaryKey = configuration["PrimaryKey"];
 
             this.cosmosClient = new CosmosClient(endpointUri, primaryKey, new CosmosClientOptions() { ApplicationName = "CosmosDBDotnetQuickstart" });
 
@@ -66,7 +60,7 @@
         /// <param name="item">The item to create.</param>
         public async Task<(Movie itemMovie, bool created)> CreateItemAsync(Movie item)
         {
-            await EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitialized();
 
             ResponseMessage response = null;
 
@@ -86,7 +80,7 @@
         /// <param name="item">The item to update.</param>
         public async Task<(Movie itemMovie, bool created)> UpdateItemAsync(string id, Movie item)
         {
-            await EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitialized();
 
             ResponseMessage response = null;
 
@@ -106,7 +100,7 @@
         /// <param name="partitionKey">The partition key.</param>
         public async Task DeleteItemAsync(string id, string partitionKey)
         {
-            await EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitialized();
 
             ItemResponse<Movie> itemResponse = await this.container.DeleteItemAsync<Movie>(id, new PartitionKey(partitionKey));
         }
@@ -116,11 +110,11 @@
         /// <param name="partitionKey">The partition key.</param>
         public async Task<Movie> GetItemAsync(string id, string partitionKey)
         {
-            await EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitialized();
 
             this.itemsMemoryCache.Cache.TryGetValue<Movie>(Movie.ComposeUniqueKey(id, partitionKey), out Movie movieItem);
 
-            using (ResponseMessage streamedResponse = await container.ReadItemStreamAsync(
+            using (ResponseMessage streamedResponse = await this.container.ReadItemStreamAsync(
                partitionKey: new PartitionKey(partitionKey),
                id: id,
                requestOptions: movieItem == null ? null : new ItemRequestOptions { IfNoneMatchEtag = movieItem.ETag }))
@@ -144,7 +138,7 @@
         /// <summary>Gets all items.</summary>
         public async Task<IEnumerable<Movie>> GetAllItemsAsync()
         {
-            await EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitialized();
 
             var sqlQueryText = "SELECT * FROM c";
 
@@ -183,6 +177,7 @@
             return movies.SelectMany(x => x);
         }
 
+        /// <summary>Initializes CosmosDb.</summary>
         private async Task Initialize()
         {
             try
@@ -196,14 +191,13 @@
                 this.initializationError = exc.Message;
             }
 
-            await eventInitialized.Set();
+            await this.eventInitialized.Set();
         }
 
         /// <summary>Waits for initialization.</summary>
-        /// <exception cref="Exception"></exception>
         private async Task EnsureThatCosmosInitialized()
         {
-            await eventInitialized.WaitAsync();
+            await this.eventInitialized.WaitAsync();
 
             if (this.initializationError != null)
             {
@@ -217,7 +211,7 @@
         private async Task CreateDatabaseAsync()
         {
             // Create a new database
-            this.database = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId);
+            this.database = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
         }
 
         /// <summary>
@@ -226,7 +220,7 @@
         private async Task CreateContainerAsync()
         {
             // Create a new container
-            this.container = await this.database.CreateContainerIfNotExistsAsync(containerId, "/Year", 400);
+            this.container = await this.database.CreateContainerIfNotExistsAsync(ContainerId, "/Year", 400);
         }
 
         /// <summary>
@@ -255,7 +249,7 @@
         /// <returns>A <see cref="T:System.Threading.Tasks.Task">Task</see> that represents the long running operations.</returns>
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return Initialize();
+            return this.Initialize();
         }
 
         /// <summary>Triggered when the application host is performing a graceful shutdown.</summary>
@@ -264,7 +258,7 @@
         {
             if (this.cosmosClient != null)
             {
-                cosmosClient.Dispose();
+                this.cosmosClient.Dispose();
             }
 
             return base.StopAsync(cancellationToken);
