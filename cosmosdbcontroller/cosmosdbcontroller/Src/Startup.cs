@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-
-namespace cosmosdbcontroller
+namespace CosmosDbController
 {
+    using System;
+    using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
+
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -21,9 +21,11 @@ namespace cosmosdbcontroller
         {
             services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(90));
             services.AddControllers();
+            services.AddSingleton<IItemsMemoryCache, ItemsMemoryCache>();
             services.AddSingleton<ICosmosDbrepository, CosmosDbrepository>();
             services.AddHostedService(
-                serviceProvider => (CosmosDbrepository)serviceProvider.GetRequiredService(typeof(ICosmosDbrepository)));
+                serviceProvider =>
+                    (CosmosDbrepository)serviceProvider.GetRequiredService(typeof(ICosmosDbrepository)));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
