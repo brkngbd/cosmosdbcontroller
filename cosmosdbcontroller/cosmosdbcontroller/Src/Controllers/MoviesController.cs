@@ -125,6 +125,11 @@
         /// </returns>
         private async Task<IActionResult> ExecuteFunc(Func<Task<IActionResult>> action)
         {
+            if (this.cosmosRepo.IsInitializing())
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Cosmos Db repository is initializing, try again later.");
+            }
+
             try
             {
                 return await action();

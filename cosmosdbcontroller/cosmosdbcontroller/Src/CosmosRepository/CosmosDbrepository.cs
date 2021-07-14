@@ -38,7 +38,7 @@
         private Container container;
 
         /// <summary>The event used to ensure that CosmosDb is initialized.</summary>
-        private AsyncManualResetEvent eventInitialized = new AsyncManualResetEvent(false);
+        private ManualResetEvent eventInitialized = new ManualResetEvent(false);
 
         /// <summary>The CosmosDb initialization error message.</summary>
         private string initializationError = null;
@@ -60,7 +60,7 @@
         /// <param name="item">The item to create.</param>
         public async Task<(Movie itemMovie, bool created)> CreateItemAsync(Movie item)
         {
-            await this.EnsureThatCosmosInitialized();
+            this.EnsureThatCosmosInitialized();
 
             ResponseMessage response = null;
 
@@ -80,7 +80,7 @@
         /// <param name="item">The item to update.</param>
         public async Task<(Movie itemMovie, bool created)> UpdateItemAsync(string id, Movie item)
         {
-            await this.EnsureThatCosmosInitialized();
+            this.EnsureThatCosmosInitialized();
 
             ResponseMessage response = null;
 
@@ -100,7 +100,7 @@
         /// <param name="partitionKey">The partition key.</param>
         public async Task DeleteItemAsync(string id, string partitionKey)
         {
-            await this.EnsureThatCosmosInitialized();
+            this.EnsureThatCosmosInitialized();
 
             ItemResponse<Movie> itemResponse = await this.container.DeleteItemAsync<Movie>(id, new PartitionKey(partitionKey));
         }
@@ -110,7 +110,7 @@
         /// <param name="partitionKey">The partition key.</param>
         public async Task<Movie> GetItemAsync(string id, string partitionKey)
         {
-            await this.EnsureThatCosmosInitialized();
+            this.EnsureThatCosmosInitialized();
 
             this.itemsMemoryCache.Cache.TryGetValue<Movie>(Movie.ComposeUniqueKey(id, partitionKey), out Movie movieItem);
 
@@ -138,7 +138,7 @@
         /// <summary>Gets all items.</summary>
         public async Task<IEnumerable<Movie>> GetAllItemsAsync()
         {
-            await this.EnsureThatCosmosInitialized();
+            this.EnsureThatCosmosInitialized();
 
             var sqlQueryText = "SELECT * FROM c";
 
@@ -177,6 +177,17 @@
             return movies.SelectMany(x => x);
         }
 
+        /// <summary>Determines whether CosmosDb repo is being initializing.</summary>
+        public bool IsInitializing()
+        {
+            if( !this.eventInitialized.WaitOne(0))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>Initializes CosmosDb.</summary>
         private async Task Initialize()
         {
@@ -191,13 +202,13 @@
                 this.initializationError = exc.Message;
             }
 
-            await this.eventInitialized.Set();
+            this.eventInitialized.Set();
         }
 
         /// <summary>Waits for initialization.</summary>
-        private async Task EnsureThatCosmosInitialized()
+        private void EnsureThatCosmosInitialized()
         {
-            await this.eventInitialized.WaitAsync();
+            this.eventInitialized.WaitOne();
 
             if (this.initializationError != null)
             {

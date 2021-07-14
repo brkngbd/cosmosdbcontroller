@@ -13,5 +13,7 @@
         Task<IEnumerable<Movie>> GetAllItemsAsync();
         Task<Movie> GetItemAsync(string id, string partitionKey);
         Task<(Movie itemMovie, bool created)> UpdateItemAsync(string id, Movie item);
+
+        bool IsInitializing();
     }
 }
