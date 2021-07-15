@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     ///   The CRUD controller.
@@ -136,6 +137,10 @@
             try
             {
                 return await action();
+            }
+            catch (CosmosException e) when ((int)e.StatusCode == StatusCodes.Status404NotFound)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, e.Message);
             }
             catch (Exception e)
             {
