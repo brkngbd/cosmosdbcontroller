@@ -43,7 +43,7 @@ namespace CosmosDbController
             services.AddHostedService<CosmosDbBackgroundService>(
                 serviceProvider => serviceProvider.GetService<CosmosDbBackgroundService>());
             services.AddSingleton<IMemoryCache, MemoryCache>();
-            services.AddSingleton<ICosmosDbrepository, CosmosDbrepository>();
+            services.AddSingleton<CosmosDbrepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

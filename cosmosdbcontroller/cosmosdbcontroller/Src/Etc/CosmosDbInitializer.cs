@@ -21,8 +21,6 @@
         /// <summary>The container we will create.</summary>
         private Container container;
 
-        public Container CosmosDbContainer => container;
-
         public CosmosDbInitializer(CosmosClient cosmosClient, IConfiguration configuration)
         {
             this.DatabaseId = configuration["Databaseid"];

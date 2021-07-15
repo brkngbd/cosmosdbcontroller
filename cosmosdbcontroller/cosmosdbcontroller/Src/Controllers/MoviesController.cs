@@ -13,13 +13,13 @@
     public class MoviesController : ControllerBase
     {
         /// <summary>The cosmos repo instance.</summary>
-        private readonly ICosmosDbrepository cosmosRepo;
+        private readonly CosmosDbrepository cosmosRepo;
 
         private readonly CosmosDbInitializerModel cosmosDbInitializerModel;
 
         /// <summary>Initializes a new instance of the <see cref="MoviesController" /> class.</summary>
         /// <param name="cosmosDao">The cosmos DAO.</param>
-        public MoviesController(ICosmosDbrepository cosmosDao, CosmosDbInitializerModel cosmosDbInitializerModel)
+        public MoviesController(CosmosDbrepository cosmosDao, CosmosDbInitializerModel cosmosDbInitializerModel)
         {
             this.cosmosRepo = cosmosDao;
             this.cosmosDbInitializerModel = cosmosDbInitializerModel;

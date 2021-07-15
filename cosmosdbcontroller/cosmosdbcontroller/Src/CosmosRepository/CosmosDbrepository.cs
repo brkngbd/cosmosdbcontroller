@@ -14,7 +14,7 @@
     /// <summary>
     /// Used to communicate to CosmosDB service.
     /// </summary>
-    public class CosmosDbrepository : ICosmosDbrepository
+    public class CosmosDbrepository
     {
 
         /// <summary>The database identifier</summary>
