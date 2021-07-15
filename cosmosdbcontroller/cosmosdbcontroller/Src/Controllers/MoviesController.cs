@@ -3,11 +3,11 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc;
 
-/// <summary>
-///   The CRUD controller.
-/// </summary>
+    /// <summary>
+    ///   The CRUD controller.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class MoviesController : ControllerBase
@@ -15,11 +15,14 @@ using Microsoft.AspNetCore.Mvc;
         /// <summary>The cosmos repo instance.</summary>
         private readonly ICosmosDbrepository cosmosRepo;
 
+        private readonly CosmosDbInitializerModel cosmosDbInitializerModel;
+
         /// <summary>Initializes a new instance of the <see cref="MoviesController" /> class.</summary>
         /// <param name="cosmosDao">The cosmos DAO.</param>
-        public MoviesController(ICosmosDbrepository cosmosDao)
+        public MoviesController(ICosmosDbrepository cosmosDao, CosmosDbInitializerModel cosmosDbInitializerModel)
         {
             this.cosmosRepo = cosmosDao;
+            this.cosmosDbInitializerModel = cosmosDbInitializerModel;
         }
 
         // GET: api/movies
@@ -55,7 +58,7 @@ using Microsoft.AspNetCore.Mvc;
 
         // POST api/movies
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Movie item)
+        public async Task<IActionResult> Create([FromBody] MovieModel item)
         {
             return await this.ExecuteFunc(async () =>
             {
@@ -64,7 +67,7 @@ using Microsoft.AspNetCore.Mvc;
                     return BadRequest();
                 }
 
-                (Movie itemMovie, bool created) creationResult = await cosmosRepo.CreateItemAsync(item);
+                (MovieModel itemMovie, bool created) creationResult = await cosmosRepo.CreateItemAsync(item);
 
                 if (creationResult.created)
                 {
@@ -79,7 +82,7 @@ using Microsoft.AspNetCore.Mvc;
 
         // PUT api/movies/Terminator/1986
         [HttpPut("{id}/{partitionKey}")]
-        public async Task<IActionResult> Update(string id, string partitionKey, [FromBody] Movie item)
+        public async Task<IActionResult> Update(string id, string partitionKey, [FromBody] MovieModel item)
         {
             return await this.ExecuteFunc(async () =>
             {
@@ -88,11 +91,11 @@ using Microsoft.AspNetCore.Mvc;
                     return BadRequest();
                 }
 
-                (Movie itemMovie, bool created) creationResult = await cosmosRepo.UpdateItemAsync(id, item);
+                (MovieModel itemMovie, bool created) creationResult = await cosmosRepo.UpdateItemAsync(id, item);
 
                 if (creationResult.created)
                 {
-                    return CreatedAtAction("GET", "movies", new Movie { Title = item.Title }, item);
+                    return CreatedAtAction("GET", "movies", new MovieModel { Title = item.Title }, item);
                 }
                 else
                 {
@@ -125,7 +128,7 @@ using Microsoft.AspNetCore.Mvc;
         /// </returns>
         private async Task<IActionResult> ExecuteFunc(Func<Task<IActionResult>> action)
         {
-            if (this.cosmosRepo.IsInitializing())
+            if (this.cosmosDbInitializerModel.InitTask==null || !this.cosmosDbInitializerModel.InitTask.IsCompleted)
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, "Cosmos Db repository is initializing, try again later.");
             }

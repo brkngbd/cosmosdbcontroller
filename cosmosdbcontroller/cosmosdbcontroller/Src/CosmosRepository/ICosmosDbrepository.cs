@@ -8,12 +8,10 @@
     /// </summary>
     public interface ICosmosDbrepository
     {
-        Task<(Movie itemMovie, bool created)> CreateItemAsync(Movie item);
+        Task<(MovieModel itemMovie, bool created)> CreateItemAsync(MovieModel item);
         Task DeleteItemAsync(string id, string partitionKey);
-        Task<IEnumerable<Movie>> GetAllItemsAsync();
-        Task<Movie> GetItemAsync(string id, string partitionKey);
-        Task<(Movie itemMovie, bool created)> UpdateItemAsync(string id, Movie item);
-
-        bool IsInitializing();
+        Task<IEnumerable<MovieModel>> GetAllItemsAsync();
+        Task<MovieModel> GetItemAsync(string id, string partitionKey);
+        Task<(MovieModel itemMovie, bool created)> UpdateItemAsync(string id, MovieModel item);
     }
 }

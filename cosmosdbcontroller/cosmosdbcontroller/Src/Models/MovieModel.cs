@@ -6,7 +6,7 @@
     /// <summary>
     ///   Movie document item
     /// </summary>
-    public class Movie
+    public class MovieModel
     {
         /// <summary>Gets or sets the e tag.</summary>
         /// <value>The _etag.</value>
