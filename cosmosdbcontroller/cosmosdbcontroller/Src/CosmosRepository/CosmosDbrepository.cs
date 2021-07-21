@@ -10,10 +10,11 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Caching.Memory;
     using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
-    /// <summary>
-    /// Used to communicate to CosmosDB service.
-    /// </summary>
+/// <summary>
+/// Used to communicate to CosmosDB service.
+/// </summary>
     public class CosmosDbrepository
     {
 
@@ -36,11 +37,13 @@
         /// <param name="itemsMemoryCache">The items memory cache.</param>
         /// <param name="cosmosDbInitializerModel">Cosmos Db initializer model.</param>
         /// <param name="cosmosClient">Cosmos client.</param>
-        /// <param name="configuration">The configuration.</param>
-        public CosmosDbrepository(IMemoryCache itemsMemoryCache, CosmosDbInitializerModel cosmosDbInitializerModel, CosmosClient cosmosClient, IConfiguration configuration)
+        /// <param name="cosmosDbOptions">CosmosDb configuration options</param>
+        public CosmosDbrepository(IMemoryCache itemsMemoryCache, CosmosDbInitializerModel cosmosDbInitializerModel, CosmosClient cosmosClient, IOptions<CosmosDbOptions> cosmosDbOptions)
         {
-            this.DatabaseId = configuration["Databaseid"];
-            this.ContainerId = configuration["ContainerId"];
+            var options = cosmosDbOptions.Value;
+
+            this.DatabaseId = options.DatabaseId;
+            this.ContainerId = options.ContainerId;
 
             this.itemsMemoryCache = itemsMemoryCache;
             this.cosmosDbInitializerModel = cosmosDbInitializerModel;
@@ -53,7 +56,7 @@
         /// <param name="item">The item to create.</param>
         public async Task<(MovieModel itemMovie, bool created)> CreateItemAsync(MovieModel item)
         {
-            this.EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitializedAsync();
 
             ResponseMessage response = null;
 
@@ -73,7 +76,7 @@
         /// <param name="item">The item to update.</param>
         public async Task<(MovieModel itemMovie, bool created)> UpdateItemAsync(string id, MovieModel item)
         {
-            this.EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitializedAsync();
 
             ResponseMessage response = null;
 
@@ -93,7 +96,7 @@
         /// <param name="partitionKey">The partition key.</param>
         public async Task DeleteItemAsync(string id, string partitionKey)
         {
-            this.EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitializedAsync();
 
             ItemResponse<MovieModel> itemResponse = await this.container.Value.DeleteItemAsync<MovieModel>(id, new PartitionKey(partitionKey));
         }
@@ -103,7 +106,7 @@
         /// <param name="partitionKey">The partition key.</param>
         public async Task<MovieModel> GetItemAsync(string id, string partitionKey)
         {
-            this.EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitializedAsync();
 
             this.itemsMemoryCache.TryGetValue<MovieModel>(MovieModel.ComposeUniqueKey(id, partitionKey), out MovieModel movieItem);
 
@@ -135,7 +138,7 @@
         /// <summary>Gets all items.</summary>
         public async Task<IEnumerable<MovieModel>> GetAllItemsAsync()
         {
-            this.EnsureThatCosmosInitialized();
+            await this.EnsureThatCosmosInitializedAsync();
 
             var sqlQueryText = "SELECT * FROM c";
 
@@ -171,27 +174,13 @@
                 this.itemsMemoryCache.Set(movie.GetUniqueKey(), movie, memCacheOptions);
             }
 
-            return movies.SelectMany(x => x);
+            return allMovies;
         }
 
         /// <summary>Waits for initialization.</summary>
-        private void EnsureThatCosmosInitialized()
+        private async Task EnsureThatCosmosInitializedAsync()
         {
-            if (this.cosmosDbInitializerModel.InitTask.Wait(-1, this.cosmosDbInitializerModel.StoppingToken))
-            {
-                if (!this.cosmosDbInitializerModel.InitTask.IsCompletedSuccessfully)
-                {
-                    if (this.cosmosDbInitializerModel.InitTask.IsFaulted)
-                    {
-                        throw new TimeoutException($"CosmosDb failed to initialize. {this.cosmosDbInitializerModel.InitTask.Exception.Message}");
-                    }
-                    throw new TimeoutException($"CosmosDb failed to initialize in allocated time and was cancelled");
-                }
-            }
-            else
-            {
-                throw new TimeoutException($"CosmosDb failed to initialize in allocated time.");
-            }
+            await this.cosmosDbInitializerModel.InitTask;
         }
     }
 }

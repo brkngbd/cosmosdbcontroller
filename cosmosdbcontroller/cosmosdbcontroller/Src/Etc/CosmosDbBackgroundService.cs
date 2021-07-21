@@ -4,11 +4,20 @@
     using System.Threading.Tasks;
     using Microsoft.Extensions.Hosting;
 
+    /// <summary>
+    ///   The background service used to initialize CosmosDb 
+    /// </summary>
     public class CosmosDbBackgroundService : BackgroundService
     {
+        /// <summary>The cosmos database initializer</summary>
         private readonly CosmosDbInitializer cosmosDbInitializer;
+
+        /// <summary>The cosmos database initializer model</summary>
         private readonly CosmosDbInitializerModel cosmosDbInitializerModel;
-        
+
+        /// <summary>Initializes a new instance of the <see cref="CosmosDbBackgroundService" /> class.</summary>
+        /// <param name="cosmosDbInitializer">The cosmos database initializer.</param>
+        /// <param name="cosmosDbInitializerModel">The cosmos database initializer model.</param>
         public CosmosDbBackgroundService(CosmosDbInitializer cosmosDbInitializer, CosmosDbInitializerModel cosmosDbInitializerModel)
         {
             this.cosmosDbInitializer = cosmosDbInitializer;
@@ -25,7 +34,7 @@
         /// <returns>A <see cref="T:System.Threading.Tasks.Task">Task</see> that represents the long running operations.</returns>
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            this.cosmosDbInitializerModel.SetTaskData(cosmosDbInitializer.Initialize(), stoppingToken);
+            this.cosmosDbInitializerModel.SetTaskData(cosmosDbInitializer.Initialize());
             return this.cosmosDbInitializerModel.InitTask;
         }
     }

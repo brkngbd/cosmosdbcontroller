@@ -3,7 +3,11 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.Options;
 
+    /// <summary>
+    ///   Used to prepare CosmosDb database and container
+    /// </summary>
     public class CosmosDbInitializer
     {
         /// <summary>The Cosmos client instance</summary>
@@ -21,10 +25,14 @@
         /// <summary>The container we will create.</summary>
         private Container container;
 
-        public CosmosDbInitializer(CosmosClient cosmosClient, IConfiguration configuration)
+        /// <summary>Initializes a new instance of the <see cref="CosmosDbInitializer" /> class.</summary>
+        /// <param name="cosmosClient">The cosmos client.</param>
+        /// <param name="cosmosDbOptions">The cosmos database options.</param>
+        public CosmosDbInitializer(CosmosClient cosmosClient, IOptions<CosmosDbOptions> cosmosDbOptions)
         {
-            this.DatabaseId = configuration["Databaseid"];
-            this.ContainerId = configuration["ContainerId"];
+            var options = cosmosDbOptions.Value;
+            this.DatabaseId = options.ContainerId;
+            this.ContainerId = options.ContainerId;
             this.cosmosClient = cosmosClient;
         }
 
